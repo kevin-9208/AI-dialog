@@ -1,4 +1,8 @@
-好的，我来用图文结合的方式深入介绍这两个重要概念。## 一、什么是 Function Calling？
+好的，我来用图文结合的方式深入介绍这两个重要概念。
+<img width="1472" height="1040" alt="image" src="https://github.com/user-attachments/assets/368d199f-2637-40b4-bdb5-0dcf6ac28e3e" />
+
+
+## 一、什么是 Function Calling？
 
 Function Calling（函数调用）是一种让大语言模型能够**主动请求调用外部工具或函数**的机制。它解决了一个根本问题：模型本身是静态的文字预测系统，无法实时获取数据、执行计算或操作外部系统。
 
@@ -8,7 +12,11 @@ Function Calling（函数调用）是一种让大语言模型能够**主动请�
 
 ---
 
-接下来看 MCP 协议，它是 Function Calling 之上的一个更大的标准化层：## 二、什么是 MCP（Model Context Protocol）？
+接下来看 MCP 协议，它是 Function Calling 之上的一个更大的标准化层：
+<img width="1472" height="1120" alt="image" src="https://github.com/user-attachments/assets/9eaf72a9-fced-49a1-9579-0601f5edb092" />
+
+
+## 二、什么是 MCP（Model Context Protocol）？
 
 MCP 是由 Anthropic 于 2024 年提出的**开放标准协议**，全称 Model Context Protocol。你可以把它理解为"AI 世界的 USB-C 接口"——在此之前，每家 AI 厂商、每个工具都有自己的私有对接格式，导致同一个"天气查询"工具，要对接 Claude 写一套，对接 GPT 再写一套，极度碎片化。
 
