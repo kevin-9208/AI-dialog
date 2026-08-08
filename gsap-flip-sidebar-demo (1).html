@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>客户列表 · FLIP排序 + 侧边导航高亮</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/Flip.min.js"></script>
+<style>
+  :root{
+    --bg: #14161c;
+    --surface: #1b1e27;
+    --surface-2: #20232e;
+    --border: #2b2f3c;
+    --text: #eceef2;
+    --text-muted: #8890a4;
+    --accent: #f5a623;
+    --accent-dim: rgba(245,166,35,0.14);
+    --success: #3ddc97;
+    --radius: 10px;
+  }
+  *{ box-sizing: border-box; }
+  body{
+    margin:0;
+    background: var(--bg);
+    background-image:
+      radial-gradient(circle at 10% 0%, rgba(245,166,35,0.05), transparent 40%),
+      radial-gradient(circle at 90% 100%, rgba(61,220,151,0.04), transparent 40%);
+    color: var(--text);
+    font-family:'Inter', -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    min-height: 100vh;
+    display:flex;
+  }
+
+  /* ---------------- Sidebar ---------------- */
+  .sidebar{
+    width: 220px;
+    flex-shrink: 0;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 24px 14px;
+    min-height: 100vh;
+    position: relative;
+  }
+  .sidebar-brand{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 15px;
+    padding: 0 10px;
+    margin-bottom: 28px;
+    display:flex;
+    align-items:center;
+    gap: 8px;
+  }
+  .sidebar-brand .dot{
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--accent);
+  }
+
+  .sidebar-nav{ position: relative; display:flex; flex-direction:column; gap: 2px; }
+
+  .nav-highlight{
+    position: absolute;
+    left: 0;
+    width: 100%;
+    background: var(--accent-dim);
+    border-radius: 8px;
+    z-index: 0;
+    pointer-events: none;
+  }
+  .nav-highlight::before{
+    content:"";
+    position:absolute;
+    left: 0; top: 8px; bottom: 8px;
+    width: 3px;
+    background: var(--accent);
+    border-radius: 0 3px 3px 0;
+  }
+
+  .nav-item{
+    position: relative;
+    z-index: 1;
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+    background: none;
+    border: none;
+    width: 100%;
+    text-align: left;
+    font-family: inherit;
+    transition: color 0.15s ease;
+  }
+  .nav-item svg{ width:17px; height:17px; flex-shrink:0; opacity:0.85; }
+  .nav-item:hover{ color: var(--text); }
+  .nav-item[aria-current="true"]{ color: var(--accent); }
+  .nav-item[aria-current="true"] svg{ opacity:1; }
+
+  /* ---------------- Main ---------------- */
+  .main{ flex:1; padding: 40px 36px; max-width: 980px; }
+
+  .page-header{ margin-bottom: 24px; }
+  .page-header .eyebrow{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 6px;
+  }
+  .page-header h1{
+    font-family:'Space Grotesk', sans-serif;
+    font-size: 24px;
+    font-weight: 600;
+    margin: 0;
+  }
+  .page-header .sub{ color: var(--text-muted); font-size: 13px; margin-top: 6px; }
+
+  .table-card{
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  .table-head, .row{
+    display:grid;
+    grid-template-columns: 2fr 1.3fr 0.9fr 1fr;
+    align-items:center;
+    gap: 12px;
+  }
+
+  .table-head{
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(255,255,255,0.015);
+  }
+
+  .th-btn{
+    display:flex;
+    align-items:center;
+    gap: 5px;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-family:'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+    padding: 0;
+  }
+  .th-btn:hover{ color: var(--text); }
+  .th-btn.active{ color: var(--accent); }
+  .th-btn .chevron{
+    width: 10px; height: 10px;
+    display:inline-block;
+    transform-origin: center;
+  }
+  .th-btn:not(.sortable){ cursor: default; }
+  .th-static{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .table-body{ position: relative; }
+
+  .row{
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px;
+  }
+  .row:last-child{ border-bottom: none; }
+
+  .cell-name{ display:flex; align-items:center; gap: 10px; font-weight: 500; }
+  .avatar{
+    width: 28px; height: 28px; border-radius: 50%;
+    display:flex; align-items:center; justify-content:center;
+    font-size: 11px; font-weight: 600;
+    background: var(--surface-2);
+    color: var(--text-muted);
+    flex-shrink: 0;
+  }
+  .cell-dept{ color: var(--text-muted); }
+  .cell-score{ font-family:'JetBrains Mono', monospace; }
+  .cell-score .score-bar{
+    display:inline-block;
+    width: 44px; height: 4px;
+    border-radius: 2px;
+    background: var(--surface-2);
+    margin-right: 8px;
+    vertical-align: middle;
+    overflow: hidden;
+  }
+  .cell-score .score-fill{
+    display:block; height:100%;
+    background: var(--success);
+    border-radius: 2px;
+  }
+  .cell-date{ font-family:'JetBrains Mono', monospace; color: var(--text-muted); font-size: 13px; }
+
+  @media (max-width: 760px){
+    body{ flex-direction: column; }
+    .sidebar{ width: 100%; min-height: auto; border-right:none; border-bottom:1px solid var(--border); }
+    .sidebar-nav{ flex-direction: row; overflow-x:auto; }
+    .nav-highlight{ display:none; }
+    .table-head, .row{ grid-template-columns: 1.6fr 1fr 0.8fr; }
+    .cell-date, .table-head span:nth-child(4){ display:none; }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    * { transition-duration: 0.01ms !important; }
+  }
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-brand"><span class="dot"></span>Console</div>
+  <nav class="sidebar-nav" id="sidebarNav">
+    <div class="nav-highlight" id="navHighlight"></div>
+    <button class="nav-item" data-page="dashboard">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+      概览
+    </button>
+    <button class="nav-item" data-page="customers" aria-current="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="3.2"/><path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6"/></svg>
+      客户
+    </button>
+    <button class="nav-item" data-page="orders">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16M4 12h16M4 17h10"/></svg>
+      订单
+    </button>
+    <button class="nav-item" data-page="reports">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 19V9M12 19V5M19 19v-6"/></svg>
+      报表
+    </button>
+    <button class="nav-item" data-page="settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.14-1.4l2-1.55-2-3.46-2.36.95a7 7 0 0 0-2.4-1.4L14 2h-4l-.1 2.14a7 7 0 0 0-2.4 1.4l-2.36-.95-2 3.46 2 1.55A7 7 0 0 0 5 12c0 .48.05.94.14 1.4l-2 1.55 2 3.46 2.36-.95a7 7 0 0 0 2.4 1.4L10 22h4l.1-2.14a7 7 0 0 0 2.4-1.4l2.36.95 2-3.46-2-1.55c.09-.46.14-.92.14-1.4Z"/></svg>
+      设置
+    </button>
+  </nav>
+</aside>
+
+<main class="main">
+  <div class="page-header">
+    <p class="eyebrow">CRM · Customers</p>
+    <h1>客户列表</h1>
+    <p class="sub">点击表头排序 — 行会用 FLIP 动画飞到新位置，而不是瞬间重排</p>
+  </div>
+
+  <div class="table-card">
+    <div class="table-head">
+      <button class="th-btn sortable" data-field="name">
+        姓名
+        <svg class="chevron" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 3.5L5 6.5L8 3.5"/></svg>
+      </button>
+      <span class="th-static">部门</span>
+      <button class="th-btn sortable" data-field="score">
+        评分
+        <svg class="chevron" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 3.5L5 6.5L8 3.5"/></svg>
+      </button>
+      <button class="th-btn sortable" data-field="joined">
+        入职日期
+        <svg class="chevron" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 3.5L5 6.5L8 3.5"/></svg>
+      </button>
+    </div>
+    <div class="table-body" id="tableBody"></div>
+  </div>
+</main>
+
+<script>
+(function(){
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const D = (v) => reduced ? 0.001 : v;
+
+  gsap.registerPlugin(Flip);
+
+  // ---------------- Sidebar sliding highlight ----------------
+
+  const navContainer = document.getElementById('sidebarNav');
+  const navHighlight = document.getElementById('navHighlight');
+  const navItems = Array.from(navContainer.querySelectorAll('.nav-item'));
+
+  function moveHighlightTo(item, animate){
+    const containerRect = navContainer.getBoundingClientRect();
+    const itemRect = item.getBoundingClientRect();
+    const top = itemRect.top - containerRect.top;
+
+    if (animate && !reduced){
+      gsap.to(navHighlight, {
+        top: top,
+        height: itemRect.height,
+        duration: 0.4,
+        ease: 'power3.out'
+      });
+    } else {
+      gsap.set(navHighlight, { top: top, height: itemRect.height });
+    }
+  }
+
+  navItems.forEach(item => {
+    item.addEventListener('click', () => {
+      navItems.forEach(i => i.removeAttribute('aria-current'));
+      item.setAttribute('aria-current', 'true');
+      moveHighlightTo(item, true);
+    });
+  });
+
+  // position highlight on load, behind the initially-active item
+  window.addEventListener('DOMContentLoaded', () => {
+    const active = navContainer.querySelector('[aria-current="true"]') || navItems[0];
+    moveHighlightTo(active, false);
+  });
+  // in case DOMContentLoaded already fired by the time this runs
+  const initialActive = navContainer.querySelector('[aria-current="true"]') || navItems[0];
+  moveHighlightTo(initialActive, false);
+
+  // ---------------- Table data ----------------
+
+  const customers = [
+    { name: '陈志强', dept: '销售部',  score: 92, joined: '2021-03-14' },
+    { name: '林美琪', dept: '市场部',  score: 78, joined: '2022-07-02' },
+    { name: '黄冠宇', dept: '技术部',  score: 85, joined: '2020-11-19' },
+    { name: '吴雅婷', dept: '客服部',  score: 64, joined: '2023-01-08' },
+    { name: '张育诚', dept: '销售部',  score: 71, joined: '2019-05-27' },
+    { name: '刘思颖', dept: '技术部',  score: 96, joined: '2022-02-15' },
+    { name: '郑文豪', dept: '财务部',  score: 58, joined: '2021-09-30' },
+    { name: '许佩璇', dept: '市场部',  score: 88, joined: '2023-06-11' },
+  ];
+
+  const tableBody = document.getElementById('tableBody');
+  let sortField = null;
+  let sortAsc = true;
+
+  function initials(name){ return name.slice(-2); }
+
+  function createRowElement(c){
+    const row = document.createElement('div');
+    row.className = 'row';
+    row.dataset.name = c.name;
+    row.innerHTML = `
+      <span class="cell-name"><span class="avatar">${initials(c.name)}</span>${c.name}</span>
+      <span class="cell-dept">${c.dept}</span>
+      <span class="cell-score"><span class="score-bar"><span class="score-fill" style="width:${c.score}%"></span></span>${c.score}</span>
+      <span class="cell-date">${c.joined}</span>
+    `;
+    return row;
+  }
+
+  function renderAll(){
+    tableBody.innerHTML = '';
+    customers.forEach(c => tableBody.appendChild(createRowElement(c)));
+  }
+
+  function compare(a, b, field){
+    if (field === 'score'){
+      return a.score - b.score;
+    }
+    if (field === 'joined'){
+      return a.joined.localeCompare(b.joined);
+    }
+    return a.name.localeCompare(b.name, 'zh-Hans-CN');
+  }
+
+  function sortBy(field){
+    const rows = Array.from(tableBody.children);
+
+    if (sortField === field){
+      sortAsc = !sortAsc;
+    } else {
+      sortField = field;
+      sortAsc = true;
+    }
+
+    // capture current position/state of every row before reordering
+    const state = Flip.getState(rows);
+
+    customers.sort((a, b) => {
+      const result = compare(a, b, field);
+      return sortAsc ? result : -result;
+    });
+
+    // reorder the actual DOM nodes to match the new sort order
+    customers.forEach(c => {
+      const el = tableBody.querySelector(`[data-name="${c.name}"]`);
+      tableBody.appendChild(el);
+    });
+
+    // animate from the captured state to the new layout
+    Flip.from(state, {
+      duration: D(0.5),
+      ease: 'power2.inOut',
+      stagger: reduced ? 0 : 0.02,
+      absolute: true
+    });
+
+    updateHeaderIndicators();
+  }
+
+  function updateHeaderIndicators(){
+    document.querySelectorAll('.th-btn.sortable').forEach(btn => {
+      const field = btn.dataset.field;
+      const chevron = btn.querySelector('.chevron');
+      if (field === sortField){
+        btn.classList.add('active');
+        gsap.to(chevron, { rotate: sortAsc ? 0 : 180, duration: D(0.25), ease: 'power2.out' });
+      } else {
+        btn.classList.remove('active');
+      }
+    });
+  }
+
+  document.querySelectorAll('.th-btn.sortable').forEach(btn => {
+    btn.addEventListener('click', () => sortBy(btn.dataset.field));
+  });
+
+  renderAll();
+})();
+</script>
+
+</body>
+</html>
